@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import pool from "../config/db";
-
+//
 interface LogEvent {
   projectId: string;
   environmentId: string;
