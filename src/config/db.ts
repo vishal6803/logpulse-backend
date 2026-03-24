@@ -1,22 +1,37 @@
 import { Pool, PoolConfig } from "pg";
 import dotenv from "dotenv";
+
 dotenv.config();
+
+const isProduction = process.env.NODE_ENV === "production";
+
 const poolConfig: PoolConfig = {
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST || "localhost",
-  database: process.env.DB_NAME || "logpulse",
-  password: process.env.DB_PASSWORD,
-  port: parseInt(process.env.DB_PORT || "5432"),
-  max: 20, // maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // close idle clients after 30 seconds
-  connectionTimeoutMillis: 2000, // return an error after 2 seconds if connection could not be established
+  connectionString: process.env.DATABASE_URL,
+  ...(process.env.DATABASE_URL
+    ? {}
+    : {
+        user: process.env.DB_USER,
+        host: process.env.DB_HOST || "localhost",
+        database: process.env.DB_NAME || "logpulse",
+        password: process.env.DB_PASSWORD,
+        port: parseInt(process.env.DB_PORT || "5432"),
+      }),
+
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+
+  // Critical for Neon/Render
+  ssl: isProduction ? { rejectUnauthorized: false } : false,
 };
 
 const pool = new Pool(poolConfig);
 
 pool.on("error", (err) => {
   console.error("Unexpected error on idle client", err);
-  process.exit(-1);
+  // Don't kill the process in production for every error,
+  // but keep it for major connection failures
+  if (!isProduction) process.exit(-1);
 });
 
 export default pool;
