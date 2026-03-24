@@ -1,10 +1,12 @@
 import express from "express";
+import cors from "cors";
 import authRoutes from "./features/auth/auth.routes";
 import projectsRoutes from "./features/projects/projects.routes";
 import ingestionRoutes from "./features/ingestion/ingestion.routes";
 import { authMiddleware } from "./middlewares/auth.middleware";
 import { ApiKeyAuthMiddleware } from "./middlewares/apiKey.middleware";
 const app = express();
+app.use(cors({ origin: "*" }));
 require("dotenv").config();
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
