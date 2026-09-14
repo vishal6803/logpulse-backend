@@ -2,9 +2,11 @@ import { Request, Response } from "express";
 import {
   createProjectService,
   deleteProjectService,
+  getAllProjectsWithEnvironmentsService,
   getUserProjects,
 } from "./projects.service";
 import { AuthRequest } from "../../middlewares/auth.middleware";
+import { sendResponse } from "../../utils/responseHandler";
 
 export const createProject = async (req: AuthRequest, res: Response) => {
   // create a project
@@ -55,5 +57,33 @@ export const getAllProjectByUserId = async (
     res.status(200).json(userProjects);
   } catch (error) {
     res.status(500).json({ message: "Error fetching projects" });
+  }
+};
+
+// get all projects of a user with their environments
+
+export const getAllProjectsWithEnvironments = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  const userId = req.user.id;
+  if (!userId) {
+    return res.status(400).json({ message: "User ID is required" });
+  }
+  try {
+    const projectsWithEnvironments =
+      await getAllProjectsWithEnvironmentsService(userId);
+    if (projectsWithEnvironments.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No projects found for this user" });
+    }
+    sendResponse(res, 200, "Projects with environments fetched successfully", {
+      projects: projectsWithEnvironments,
+    });
+    // res.status(200).json(projectsWithEnvironments);
+  } catch (error) {
+    console.log((error as Error).message);
+    sendResponse(res, 500, "Error fetching projects with environments");
   }
 };

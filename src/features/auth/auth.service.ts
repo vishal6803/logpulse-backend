@@ -45,9 +45,10 @@ export const loginUserService = async (email: string, password: string) => {
     throw new Error("FATAL ERROR: JWT_SECRET is not defined in the .env file!");
   }
   const token = jwt.sign(payload, secret, { expiresIn: "7h" });
-  return `Bearer ${token}`;
+  return token;
 };
 
+// helper function to check if user exists by email
 const isUserExists = async (email: string): Promise<any | null> => {
   const result = await pool.query("SELECT * FROM users WHERE email = $1", [
     email,

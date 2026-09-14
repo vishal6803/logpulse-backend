@@ -11,4 +11,7 @@ routes.delete("/:id", projectsController.deleteProject);
 // get a specific project by id
 routes.get("/all", projectsController.getAllProjectByUserId);
 
+// get all projects of a user with their environments
+routes.get("/with-env-list", projectsController.getAllProjectsWithEnvironments);
+
 export default routes;

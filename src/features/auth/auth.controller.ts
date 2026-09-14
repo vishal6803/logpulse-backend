@@ -1,5 +1,7 @@
 import e, { Request, Response } from "express";
 import { loginUserService, registerUserService } from "./auth.service";
+import { sendResponse } from "../../utils/responseHandler";
+
 export const registerUser = async (req: Request, res: Response) => {
   if (!req.body.email || !req.body.password || !req.body.name) {
     return res
@@ -9,34 +11,39 @@ export const registerUser = async (req: Request, res: Response) => {
   // register a user
   try {
     const newUser = await registerUserService(req.body);
-    res
-      .status(201)
-      .json({ message: "User registered successfully", user: newUser });
+    return sendResponse(res, 201, "User registered successfully", newUser);
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Internal server error";
     if (errorMessage === "Email already exists") {
-      return res.status(409).json({ message: errorMessage });
+      return sendResponse(res, 409, errorMessage);
     }
-    res.status(500).json({ message: errorMessage });
+    return sendResponse(res, 500, errorMessage);
   }
 };
 
 export const loginUser = async (req: Request, res: Response) => {
   if (!req.body.email || !req.body.password) {
-    return res.status(400).json({ message: "Email and password are required" });
+    return sendResponse(res, 400, "Email and password are required");
   }
 
   try {
     const token = await loginUserService(req.body.email, req.body.password);
-    res.status(200).json({ message: "Login successful", token });
+    res.cookie("lp_session", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Set secure flag in production
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Set sameSite to 'none' in production for cross-site cookies, otherwise 'lax'
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      path: "/", // Ensure cookie is available for all routes
+    });
+    return sendResponse(res, 200, "Login successful", { data: null });
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Internal server error";
     if (errorMessage === "Invalid email or password") {
-      res.status(401).json({ message: errorMessage });
+      return sendResponse(res, 401, errorMessage);
     } else {
-      res.status(500).json({ message: errorMessage });
+      return sendResponse(res, 500, errorMessage);
     }
   }
 };

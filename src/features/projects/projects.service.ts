@@ -114,3 +114,39 @@ export const getUserProjects = async (userId: string) => {
   );
   return projects.rows;
 };
+
+type ProjectWithEnvironments = {
+  id: string;
+  name: string;
+  environments: {
+    id: string;
+    name: string;
+  }[];
+};
+export const getAllProjectsWithEnvironmentsService = async (
+  userId: string,
+): Promise<ProjectWithEnvironments[]> => {
+  const projects = await pool.query(
+    `SELECT p.id as project_id, p.name as project_name,  e.id as environment_id, e.name as environment_name  FROM projects p LEFT JOIN environments e ON p.id = e.project_id WHERE p.user_id = $1 ORDER BY p.name, e.name;`,
+    [userId],
+  );
+
+  const data = projects.rows.reduce((acc: any, row: any) => {
+    let project = acc.find((p: any) => p.id === row.project_id);
+    if (!project) {
+      project = {
+        id: row.project_id,
+        name: row.project_name,
+        environments: [],
+      };
+      acc.push(project);
+    }
+    project.environments.push({
+      id: row.environment_id,
+      name: row.environment_name,
+    });
+    return acc;
+  }, []);
+
+  return data;
+};
