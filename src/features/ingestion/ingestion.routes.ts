@@ -4,6 +4,7 @@ import { ApiKeyRequest } from "../../middlewares/apiKey.middleware";
 import { ingestionController } from "./ingestion.controller";
 const routes = express.Router();
 
+// dummy for tests of k6
 const req = {
   environment_name: "Production",
   level: "error",
