@@ -1,6 +1,5 @@
 import { Response } from "express";
 import { ApiKeyRequest } from "../../middlewares/apiKey.middleware";
-import pool from "../../config/db";
 import { createIngestion } from "./ingestion.service";
 
 export const ingestionController = async (
@@ -10,17 +9,21 @@ export const ingestionController = async (
   const { environmentName, level, type, message, stack_trace, metadata } =
     req.body ?? {};
   const { id } = req.project ?? {};
+
   if (
     !id ||
     !environmentName ||
     !level ||
     !type ||
     !message ||
-    !stack_trace ||
-    !metadata
+    !stack_trace
   ) {
-    return res.status(400).json({ message: "Missing required fields" });
+    return res.status(400).json({
+      error: "Missing required fields",
+      required: ["environmentName", "level", "type", "message", "stack_trace"],
+    });
   }
+
   try {
     const result = await createIngestion(
       id,
@@ -29,11 +32,15 @@ export const ingestionController = async (
       level,
       message,
       stack_trace,
-      metadata,
+      metadata || {},
     );
-    console.log(result, "result from ingestion controller");
+
+    return res.status(202).json({
+      status: "queued",
+      eventId: result.eventId,
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Internal Server Error" });
+    console.error("[Ingestion Error]:", (error as Error).message);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
-  res.send("Create a new ingestion");
 };

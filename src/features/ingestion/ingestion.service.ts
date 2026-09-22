@@ -1,8 +1,12 @@
-import { Response } from "express";
-import pool from "../../config/db";
 import crypto from "crypto";
-import { ApiKeyRequest } from "../../middlewares/apiKey.middleware";
-import { logBuffer } from "../../services/logBuffer.service";
+import { produceEvent } from "../../services/streamProducer.service";
+
+/**
+ * High-Throughput Ingestion Service (Hot Path):
+ * - Zero PostgreSQL database queries
+ * - Pushes event to Redis Stream
+ * - Resolves in < 5ms
+ */
 export const createIngestion = async (
   projectId: string,
   environmentName: string,
@@ -12,65 +16,23 @@ export const createIngestion = async (
   stack_trace: string,
   metadata: any,
 ) => {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    // have to check for fingerprint exist or not if exist then update the record otherwise create a new record in ingestions table
-    const fingerprintString = `${type}-${message}-${stack_trace}`;
-    const fingerprint = crypto
-      .createHash("sha256")
-      .update(fingerprintString)
-      .digest("hex");
+  const eventId = crypto.randomUUID();
 
-    // get env id from env name and project id
-    const environmentId = await getEnvironmentIdByEnvironmentName(
-      client,
-      projectId,
-      environmentName,
-    );
+  // Push directly to Redis Stream (worker will handle batch DB persistence)
+  await produceEvent({
+    eventId,
+    projectId,
+    environmentName,
+    type,
+    level,
+    message,
+    stack_trace,
+    metadata: metadata || {},
+    timestamp: new Date().toISOString(),
+  });
 
-    if (!environmentId) {
-      throw new Error("Environment not found");
-    }
-
-    logBuffer.addLog(
-      projectId,
-      environmentId,
-      type,
-      level,
-      message,
-      stack_trace,
-      metadata,
-    );
-    await client.query("COMMIT");
-    return {
-      message: "Log queued for ingestion",
-    };
-
-    // Next step: Use this errorGroupId to insert the full event (with level, metadata, stack_trace) into the 'events' table!
-  } catch (error) {
-    client.query("ROLLBACK");
-    console.error("Error in createIngestion:", (error as Error).message);
-    throw new Error("Failed to create ingestion");
-  } finally {
-    // release the client back to the pool
-    client.release();
-  }
-};
-
-const getEnvironmentIdByEnvironmentName = async (
-  client: any,
-  projectId: string,
-  environmentName: string,
-) => {
-  try {
-    const result = await client.query(
-      "SELECT id FROM environments WHERE project_id = $1 AND name = $2",
-      [projectId, environmentName],
-    );
-    return result.rows[0].id;
-  } catch (error) {
-    client.query("ROLLBACK");
-    throw new Error("Environment not found");
-  }
+  return {
+    eventId,
+    message: "Event queued successfully",
+  };
 };

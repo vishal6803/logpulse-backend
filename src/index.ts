@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express, { Response } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -11,22 +14,47 @@ import {
   ApiKeyRequest,
 } from "./middlewares/apiKey.middleware";
 import pool from "./config/db";
+import redis from "./config/redis";
 import { sendResponse } from "./utils/responseHandler";
+
 const app = express();
-// app.use(cors({ origin: "*" }));
+
 app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
   }),
 );
 
-require("dotenv").config();
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const API_VERSION = process.env.API_VERSION || "v1";
+
+// Telemetry & Health endpoint
+app.get("/health", async (req, res) => {
+  try {
+    const dbCheck = await pool.query("SELECT 1");
+    const redisCheck = await redis.ping();
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      services: {
+        database: dbCheck.rows.length > 0 ? "healthy" : "unhealthy",
+        redis: redisCheck === "PONG" ? "healthy" : "unhealthy",
+      },
+      uptime: process.uptime(),
+      memoryUsage: process.memoryUsage(),
+    });
+  } catch (error: any) {
+    res.status(503).json({
+      status: "degraded",
+      error: error.message,
+    });
+  }
+});
+
 app.get("/", authMiddleware, (req, res) => {
   // will chnage when projects craeted api will be created
   res.send("Hello World!");

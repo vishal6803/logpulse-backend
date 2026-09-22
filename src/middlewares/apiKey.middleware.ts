@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import pool from "../config/db";
+import { getProjectByApiKey } from "../services/cache.service";
 
 export interface ApiKeyRequest extends Request {
   project?: {
@@ -21,13 +21,8 @@ export const ApiKeyAuthMiddleware = async (
   }
 
   try {
-    // check for apikey exist in out database
-    const result = await pool.query(
-      "SELECT id FROM projects WHERE api_key = $1",
-      [apiKey],
-    );
-
-    const project = result.rows[0];
+    // Zero DB hits on hot path: check L1/L2 cache first
+    const project = await getProjectByApiKey(apiKey);
 
     if (!project) {
       return res.status(401).json({ message: "Unauthorized: Invalid API key" });

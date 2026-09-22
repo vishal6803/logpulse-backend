@@ -33,14 +33,14 @@ export default function () {
   const params = {
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": "lp_proj_0dd5e38c90544ddaaaf75f33cf22d2ba",
+      "x-api-key": __ENV.API_KEY || "lp_proj_81939e25278eba5d2baa4357c4415733",
     },
   };
 
   const res = http.post(url, payload, params);
 
   check(res, {
-    "status is 200": (r) => r.status === 200,
-    "errorGroupId returned": (r) => r.body.includes("errorGroupId"),
+    "status is 202": (r) => r.status === 202,
+    "event queued": (r) => r.body.includes("queued"),
   });
 }
