@@ -167,16 +167,17 @@ Used to:
 
 ---
 
-## 📊 Performance Testing
+## 📊 Performance Testing & Benchmarks
 
-Load tested using k6 with constant RPS.
+Load tested using k6 with constant arrival-rate scenarios against the Zero-DB Redis Streams ingestion pipeline. Detailed report in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
-### Results
+### Latest Benchmark Results (Zero-DB Architecture)
 
-| RPS | Avg Latency | p95 | Max Latency | Notes |
-|-----|------------|-----|-------------|------|
-| 100 | ~11ms | ~39ms | ~560ms | Stable |
-| 300 | ~43ms | ~211ms | ~786ms | Throughput limit begins |
+| RPS Target | Sustained RPS | Median (p50) | p90 Latency | p95 Latency | Failed Reqs | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| 300 req/s | **295.1 req/s** | **1.29 ms** | **8.34 ms** | **22.99 ms** | **0.00% (0/8,854)** | Zero DB hits, Redis Streams append |
+
+*Compared to legacy in-memory buffer: p95 latency dropped from 211ms down to 22.99ms (~10x improvement) with 100% data durability.*
 
 ---
 

@@ -10,12 +10,12 @@ const poolConfig: PoolConfig = {
   ...(process.env.DATABASE_URL
     ? {}
     : {
-        user: process.env.DB_USER,
-        host: process.env.DB_HOST || "localhost",
-        database: process.env.DB_NAME || "logpulse",
-        password: process.env.DB_PASSWORD,
-        port: parseInt(process.env.DB_PORT || "5432"),
-      }),
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST || "localhost",
+      database: process.env.DB_NAME || "logpulse",
+      password: process.env.DB_PASSWORD,
+      port: parseInt(process.env.DB_PORT || "5432"),
+    }),
 
   max: 20,
   idleTimeoutMillis: 30000,
