@@ -8,6 +8,8 @@
     "build": "tsc",
     "dev": "ts-node-dev --inspect -- ./src/index.ts",
     "worker": "ts-node-dev ./src/worker/worker.ts",
+    "seed:issues": "ts-node-dev ./src/scripts/seed-issues.ts",
+    "send:error": "ts-node-dev ./src/scripts/send-test-error.ts",
     "test:ai": "ts-node-dev ./tests/ai-engine.test.ts",
     "test:ai:live": "ts-node-dev ./tests/live-ai-flow.test.ts",
     "load:test": "k6 run ./tests/load/ingestion-test.js",
